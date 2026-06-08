@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Fornecedores - SalesCore</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap via CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a href="/index.html" class="navbar-brand mb-0 h1 text-decoration-none">
+                SalesCore
+            </a>
+
+            <div class="d-flex gap-2">
+                <a href="/products.html" class="btn btn-outline-light btn-sm">
+                    Produtos
+                </a>
+
+                <a href="/categories.html" class="btn btn-outline-light btn-sm">
+                    Categorias
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+
+        <div class="mb-4">
+            <h1 class="h3 mb-1">Fornecedores</h1>
+            <p class="text-muted mb-0">
+                Cadastro de fornecedores vinculados aos produtos.
+            </p>
+        </div>
+
+        <div id="message"></div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                Novo fornecedor
+            </div>
+
+            <div class="card-body">
+                <form id="supplierForm">
+                    <input type="hidden" id="supplier_id">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-5">
+                            <label for="name" class="form-label">Nome do fornecedor</label>
+                            <input type="text" id="name" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="document" class="form-label">Documento</label>
+                            <input type="text" id="document" class="form-control">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="phone" class="form-label">Telefone</label>
+                            <input type="text" id="phone" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">E-mail</label>
+                            <input type="email" id="email" class="form-control">
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" id="active" class="form-check-input" checked>
+                                <label for="active" class="form-check-label">Ativo</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <button type="submit" id="saveButton" class="btn btn-primary">
+                                Salvar fornecedor
+                            </button>
+
+                            <button type="button" id="cancelEditButton" class="btn btn-outline-warning d-none" onclick="cancelEdit()">
+                                Cancelar edição
+                            </button>
+
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearSupplierForm()">
+                                Limpar
+                            </button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Fornecedores cadastrados</span>
+
+                <button class="btn btn-sm btn-outline-primary" onclick="loadSuppliers()">
+                    Atualizar
+                </button>
+            </div>
+
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Documento</th>
+                                <th>Telefone</th>
+                                <th>E-mail</th>
+                                <th>Status</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="suppliersTable">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    Carregando fornecedores...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const API_URL = '/api/suppliers';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSuppliers();
+
+            document.getElementById('supplierForm').addEventListener('submit', saveSupplier);
+        });
+
+        async function loadSuppliers() {
+            const table = document.getElementById('suppliersTable');
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        Carregando fornecedores...
+                    </td>
+                </tr>
+            `;
+
+            try {
+                const response = await fetch(API_URL, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+
+                const suppliers = await response.json();
+
+                if (suppliers.length === 0) {
+                    table.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                Nenhum fornecedor cadastrado.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                table.innerHTML = '';
+
+                suppliers.forEach(supplier => {
+                    table.innerHTML += `
+                        <tr>
+                            <td>${supplier.id}</td>
+                            <td>${supplier.name}</td>
+                            <td>${supplier.document ?? '-'}</td>
+                            <td>${supplier.phone ?? '-'}</td>
+                            <td>${supplier.email ?? '-'}</td>
+                            <td>
+                                ${supplier.active
+                                    ? '<span class="badge bg-success">Ativo</span>'
+                                    : '<span class="badge bg-secondary">Inativo</span>'
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editSupplier(${supplier.id})">
+                                    Editar
+                                </button>
+
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteSupplier(${supplier.id})">
+                                    Excluir
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+            } catch (error) {
+                table.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-danger">
+                            Erro ao carregar fornecedores: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function saveSupplier(event) {
+            event.preventDefault();
+
+            const supplierId = document.getElementById('supplier_id').value;
+
+            const supplier = {
+                name: document.getElementById('name').value,
+                document: document.getElementById('document').value || null,
+                phone: document.getElementById('phone').value || null,
+                email: document.getElementById('email').value || null,
+                active: document.getElementById('active').checked
+            };
+
+            const isEditing = supplierId !== '';
+
+            const url = isEditing ? `${API_URL}/${supplierId}` : API_URL;
+            const method = isEditing ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(supplier)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showValidationErrors(data);
+                    return;
+                }
+
+                showMessage(
+                    isEditing ? 'Fornecedor atualizado com sucesso.' : 'Fornecedor cadastrado com sucesso.',
+                    'success'
+                );
+
+                clearSupplierForm();
+                loadSuppliers();
+
+            } catch (error) {
+                showMessage('Erro ao salvar fornecedor: ' + error.message, 'danger');
+            }
+        }
+
+        async function editSupplier(id) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+
+                const supplier = await response.json();
+
+                document.getElementById('supplier_id').value = supplier.id;
+                document.getElementById('name').value = supplier.name ?? '';
+                document.getElementById('document').value = supplier.document ?? '';
+                document.getElementById('phone').value = supplier.phone ?? '';
+                document.getElementById('email').value = supplier.email ?? '';
+                document.getElementById('active').checked = supplier.active === true || supplier.active === 1;
+
+                document.getElementById('saveButton').textContent = 'Atualizar fornecedor';
+                document.getElementById('cancelEditButton').classList.remove('d-none');
+
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+
+            } catch (error) {
+                showMessage('Erro ao carregar fornecedor para edição: ' + error.message, 'danger');
+            }
+        }
+
+        async function deleteSupplier(id) {
+            const confirmed = confirm('Deseja realmente excluir este fornecedor?');
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message ?? `Erro HTTP: ${response.status}`);
+                }
+
+                showMessage('Fornecedor excluído com sucesso.', 'success');
+                loadSuppliers();
+
+            } catch (error) {
+                showMessage('Erro ao excluir fornecedor: ' + error.message, 'danger');
+            }
+        }
+
+        function cancelEdit() {
+            clearSupplierForm();
+            showMessage('Edição cancelada.', 'warning');
+        }
+
+        function clearSupplierForm() {
+            document.getElementById('supplierForm').reset();
+
+            document.getElementById('supplier_id').value = '';
+            document.getElementById('active').checked = true;
+
+            document.getElementById('saveButton').textContent = 'Salvar fornecedor';
+            document.getElementById('cancelEditButton').classList.add('d-none');
+        }
+
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+
+            message.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${text}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+
+        function showValidationErrors(data) {
+            if (!data.errors) {
+                showMessage(data.message ?? 'Erro ao validar os dados.', 'danger');
+                return;
+            }
+
+            let errorList = '<ul class="mb-0">';
+
+            Object.values(data.errors).forEach(fieldErrors => {
+                fieldErrors.forEach(error => {
+                    errorList += `<li>${error}</li>`;
+                });
+            });
+
+            errorList += '</ul>';
+
+            showMessage(errorList, 'danger');
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

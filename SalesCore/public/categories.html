@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Categorias - SalesCore</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap via CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a href="/index.html" class="navbar-brand mb-0 h1 text-decoration-none">
+                SalesCore
+            </a>
+
+            <div>
+                <a href="/products.html" class="btn btn-outline-light btn-sm">
+                    Produtos
+                </a>
+
+                <a href="/suppliers.html" class="btn btn-outline-light btn-sm">
+                    Fornecedores
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+
+        <div class="mb-4">
+            <h1 class="h3 mb-1">Categorias</h1>
+            <p class="text-muted mb-0">
+                Cadastro de categorias para organizar os produtos.
+            </p>
+        </div>
+
+        <div id="mensagem"></div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                Nova categoria
+            </div>
+
+            <div class="card-body">
+                <form id="formCategoria">
+                    <input type="hidden" id="category_id">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-5">
+                            <label for="name" class="form-label">Nome da categoria</label>
+                            <input type="text" id="name" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label for="description" class="form-label">Descrição</label>
+                            <input type="text" id="description" class="form-control">
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" id="active" class="form-check-input" checked>
+                                <label for="active" class="form-check-label">Ativa</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <button type="submit" id="btnSalvar" class="btn btn-primary">
+                                Salvar categoria
+                            </button>
+
+                            <button type="button" id="btnCancelarEdicao" class="btn btn-outline-warning d-none"
+                                onclick="cancelarEdicao()">
+                                Cancelar edição
+                            </button>
+
+                            <button type="button" class="btn btn-outline-secondary"
+                                onclick="limparFormularioCategoria()">
+                                Limpar
+                            </button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Categorias cadastradas</span>
+
+                <button class="btn btn-sm btn-outline-primary" onclick="carregarCategorias()">
+                    Atualizar
+                </button>
+            </div>
+
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Descrição</th>
+                                <th>Status</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tabelaCategorias">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    Carregando categorias...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const API_URL = '/api/categories';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarCategorias();
+
+            document.getElementById('formCategoria').addEventListener('submit', salvarCategoria);
+        });
+
+        async function carregarCategorias() {
+            const tabela = document.getElementById('tabelaCategorias');
+
+            tabela.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        Carregando categorias...
+                    </td>
+                </tr>
+            `;
+
+            try {
+                const resposta = await fetch(API_URL, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!resposta.ok) {
+                    throw new Error(`Erro HTTP: ${resposta.status}`);
+                }
+
+                const categorias = await resposta.json();
+
+                if (categorias.length === 0) {
+                    tabela.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">
+                                Nenhuma categoria cadastrada.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tabela.innerHTML = '';
+
+                categorias.forEach(categoria => {
+                    tabela.innerHTML += `
+                        <tr>
+                            <td>${categoria.id}</td>
+                            <td>${categoria.name}</td>
+                            <td>${categoria.description ?? '-'}</td>
+                            <td>
+                                ${categoria.active
+                            ? '<span class="badge bg-success">Ativa</span>'
+                            : '<span class="badge bg-secondary">Inativa</span>'
+                        }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editarCategoria(${categoria.id})">
+                                    Editar
+                                </button>
+
+                                <button class="btn btn-sm btn-outline-danger" onclick="excluirCategoria(${categoria.id})">
+                                    Excluir
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+            } catch (erro) {
+                tabela.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center text-danger">
+                            Erro ao carregar categorias: ${erro.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function salvarCategoria(evento) {
+            evento.preventDefault();
+
+            const categoryId = document.getElementById('category_id').value;
+
+            const categoria = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value || null,
+                active: document.getElementById('active').checked
+            };
+
+            const editando = categoryId !== '';
+
+            const url = editando ? `${API_URL}/${categoryId}` : API_URL;
+            const metodo = editando ? 'PUT' : 'POST';
+
+            try {
+                const resposta = await fetch(url, {
+                    method: metodo,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(categoria)
+                });
+
+                const dados = await resposta.json();
+
+                if (!resposta.ok) {
+                    mostrarErrosValidacao(dados);
+                    return;
+                }
+
+                mostrarMensagem(
+                    editando ? 'Categoria atualizada com sucesso.' : 'Categoria cadastrada com sucesso.',
+                    'success'
+                );
+
+                limparFormularioCategoria();
+                carregarCategorias();
+
+            } catch (erro) {
+                mostrarMensagem('Erro ao salvar categoria: ' + erro.message, 'danger');
+            }
+        }
+
+        async function editarCategoria(id) {
+            try {
+                const resposta = await fetch(`${API_URL}/${id}`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!resposta.ok) {
+                    throw new Error(`Erro HTTP: ${resposta.status}`);
+                }
+
+                const categoria = await resposta.json();
+
+                document.getElementById('category_id').value = categoria.id;
+                document.getElementById('name').value = categoria.name ?? '';
+                document.getElementById('description').value = categoria.description ?? '';
+                document.getElementById('active').checked = categoria.active === true || categoria.active === 1;
+
+                document.getElementById('btnSalvar').textContent = 'Atualizar categoria';
+                document.getElementById('btnCancelarEdicao').classList.remove('d-none');
+
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+
+            } catch (erro) {
+                mostrarMensagem('Erro ao carregar categoria para edição: ' + erro.message, 'danger');
+            }
+        }
+
+        async function excluirCategoria(id) {
+            const confirmar = confirm('Deseja realmente excluir esta categoria?');
+
+            if (!confirmar) {
+                return;
+            }
+
+            try {
+                const resposta = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const dados = await resposta.json();
+
+                if (!resposta.ok) {
+                    throw new Error(dados.message ?? `Erro HTTP: ${resposta.status}`);
+                }
+
+                mostrarMensagem('Categoria excluída com sucesso.', 'success');
+                carregarCategorias();
+
+            } catch (erro) {
+                mostrarMensagem('Erro ao excluir categoria: ' + erro.message, 'danger');
+            }
+        }
+
+        function cancelarEdicao() {
+            limparFormularioCategoria();
+            mostrarMensagem('Edição cancelada.', 'warning');
+        }
+
+        function limparFormularioCategoria() {
+            document.getElementById('formCategoria').reset();
+
+            document.getElementById('category_id').value = '';
+            document.getElementById('active').checked = true;
+
+            document.getElementById('btnSalvar').textContent = 'Salvar categoria';
+            document.getElementById('btnCancelarEdicao').classList.add('d-none');
+        }
+
+        function mostrarMensagem(texto, tipo) {
+            const mensagem = document.getElementById('mensagem');
+
+            mensagem.innerHTML = `
+                <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+                    ${texto}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+
+        function mostrarErrosValidacao(dados) {
+            if (!dados.errors) {
+                mostrarMensagem(dados.message ?? 'Erro ao validar os dados.', 'danger');
+                return;
+            }
+
+            let listaErros = '<ul class="mb-0">';
+
+            Object.values(dados.errors).forEach(errosDoCampo => {
+                errosDoCampo.forEach(erro => {
+                    listaErros += `<li>${erro}</li>`;
+                });
+            });
+
+            listaErros += '</ul>';
+
+            mostrarMensagem(listaErros, 'danger');
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
