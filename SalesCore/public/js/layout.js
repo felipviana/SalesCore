@@ -32,6 +32,11 @@ function renderHeader() {
             page: 'customers',
             label: 'Clientes',
             href: '/customers.html'
+        },
+        {
+            page: 'payment-methods',
+            label: 'Formas de Pagamento',
+            href: '/payment-methods.html'
         }
     ];
 
