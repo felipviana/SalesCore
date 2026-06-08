@@ -3,23 +3,23 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Fornecedores - SalesCore</title>
+    <title>Clientes - SalesCore</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Bootstrap via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
-<body class="bg-light" data-page="suppliers">
+<body class="bg-light" data-page="customers">
 
     <div id="appHeader"></div>
 
     <main class="container py-4">
 
         <div class="mb-4">
-            <h1 class="h3 mb-1">Fornecedores</h1>
+            <h1 class="h3 mb-1">Clientes</h1>
             <p class="text-muted mb-0">
-                Cadastro de fornecedores vinculados aos produtos.
+                Cadastro e gerenciamento de clientes.
             </p>
         </div>
 
@@ -27,26 +27,26 @@
 
         <div class="card shadow-sm mb-4">
             <div class="card-header">
-                Novo fornecedor
+                Novo cliente
             </div>
 
             <div class="card-body">
-                <form id="supplierForm">
-                    <input type="hidden" id="supplier_id">
+                <form id="customerForm">
+                    <input type="hidden" id="customer_id">
 
                     <div class="row g-3">
 
-                        <div class="col-md-5">
-                            <label for="name" class="form-label">Nome do fornecedor</label>
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Nome do cliente</label>
                             <input type="text" id="name" class="form-control" required>
                         </div>
 
                         <div class="col-md-3">
-                            <label for="document" class="form-label">Documento</label>
+                            <label for="document" class="form-label">CPF/CNPJ</label>
                             <input type="text" id="document" class="form-control">
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="phone" class="form-label">Telefone</label>
                             <input type="text" id="phone" class="form-control">
                         </div>
@@ -54,6 +54,21 @@
                         <div class="col-md-6">
                             <label for="email" class="form-label">E-mail</label>
                             <input type="email" id="email" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="address" class="form-label">Endereço</label>
+                            <input type="text" id="address" class="form-control">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="city" class="form-label">Cidade</label>
+                            <input type="text" id="city" class="form-control">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="state" class="form-label">UF</label>
+                            <input type="text" id="state" class="form-control" maxlength="2">
                         </div>
 
                         <div class="col-md-2 d-flex align-items-end">
@@ -65,7 +80,7 @@
 
                         <div class="col-md-12">
                             <button type="submit" id="saveButton" class="btn btn-primary">
-                                Salvar fornecedor
+                                Salvar cliente
                             </button>
 
                             <button type="button" id="cancelEditButton" class="btn btn-outline-warning d-none"
@@ -73,7 +88,7 @@
                                 Cancelar edição
                             </button>
 
-                            <button type="button" class="btn btn-outline-secondary" onclick="clearSupplierForm()">
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearCustomerForm()">
                                 Limpar
                             </button>
                         </div>
@@ -85,9 +100,9 @@
 
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Fornecedores cadastrados</span>
+                <span>Clientes cadastrados</span>
 
-                <button class="btn btn-sm btn-outline-primary" onclick="loadSuppliers()">
+                <button class="btn btn-sm btn-outline-primary" onclick="loadCustomers()">
                     Atualizar
                 </button>
             </div>
@@ -102,15 +117,16 @@
                                 <th>Documento</th>
                                 <th>Telefone</th>
                                 <th>E-mail</th>
+                                <th>Cidade/UF</th>
                                 <th>Status</th>
                                 <th class="text-end">Ações</th>
                             </tr>
                         </thead>
 
-                        <tbody id="suppliersTable">
+                        <tbody id="customersTable">
                             <tr>
-                                <td colspan="7" class="text-center text-muted">
-                                    Carregando fornecedores...
+                                <td colspan="8" class="text-center text-muted">
+                                    Carregando clientes...
                                 </td>
                             </tr>
                         </tbody>
@@ -122,27 +138,27 @@
     </main>
     <script src="/js/layout.js"></script>
     <script>
-        const API_URL = '/api/suppliers';
+        const CUSTOMERS_API_URL = '/api/customers';
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadSuppliers();
+            loadCustomers();
 
-            document.getElementById('supplierForm').addEventListener('submit', saveSupplier);
+            document.getElementById('customerForm').addEventListener('submit', saveCustomer);
         });
 
-        async function loadSuppliers() {
-            const table = document.getElementById('suppliersTable');
+        async function loadCustomers() {
+            const table = document.getElementById('customersTable');
 
             table.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center text-muted">
-                        Carregando fornecedores...
+                    <td colspan="8" class="text-center text-muted">
+                        Carregando clientes...
                     </td>
                 </tr>
             `;
 
             try {
-                const response = await fetch(API_URL, {
+                const response = await fetch(CUSTOMERS_API_URL, {
                     headers: {
                         'Accept': 'application/json'
                     }
@@ -152,13 +168,13 @@
                     throw new Error(`Erro HTTP: ${response.status}`);
                 }
 
-                const suppliers = await response.json();
+                const customers = await response.json();
 
-                if (suppliers.length === 0) {
+                if (customers.length === 0) {
                     table.innerHTML = `
                         <tr>
-                            <td colspan="7" class="text-center text-muted">
-                                Nenhum fornecedor cadastrado.
+                            <td colspan="8" class="text-center text-muted">
+                                Nenhum cliente cadastrado.
                             </td>
                         </tr>
                     `;
@@ -167,26 +183,27 @@
 
                 table.innerHTML = '';
 
-                suppliers.forEach(supplier => {
+                customers.forEach(customer => {
                     table.innerHTML += `
                         <tr>
-                            <td>${supplier.id}</td>
-                            <td>${supplier.name}</td>
-                            <td>${supplier.document ?? '-'}</td>
-                            <td>${supplier.phone ?? '-'}</td>
-                            <td>${supplier.email ?? '-'}</td>
+                            <td>${customer.id}</td>
+                            <td>${customer.name}</td>
+                            <td>${customer.document ?? '-'}</td>
+                            <td>${customer.phone ?? '-'}</td>
+                            <td>${customer.email ?? '-'}</td>
+                            <td>${formatCityState(customer.city, customer.state)}</td>
                             <td>
-                                ${supplier.active
+                                ${isActive(customer.active)
                             ? '<span class="badge bg-success">Ativo</span>'
                             : '<span class="badge bg-secondary">Inativo</span>'
                         }
                             </td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editSupplier(${supplier.id})">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editCustomer(${customer.id})">
                                     Editar
                                 </button>
 
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteSupplier(${supplier.id})">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer(${customer.id})">
                                     Excluir
                                 </button>
                             </td>
@@ -197,30 +214,33 @@
             } catch (error) {
                 table.innerHTML = `
                     <tr>
-                        <td colspan="7" class="text-center text-danger">
-                            Erro ao carregar fornecedores: ${error.message}
+                        <td colspan="8" class="text-center text-danger">
+                            Erro ao carregar clientes: ${error.message}
                         </td>
                     </tr>
                 `;
             }
         }
 
-        async function saveSupplier(event) {
+        async function saveCustomer(event) {
             event.preventDefault();
 
-            const supplierId = document.getElementById('supplier_id').value;
+            const customerId = document.getElementById('customer_id').value;
 
-            const supplier = {
+            const customer = {
                 name: document.getElementById('name').value,
                 document: document.getElementById('document').value || null,
                 phone: document.getElementById('phone').value || null,
                 email: document.getElementById('email').value || null,
+                address: document.getElementById('address').value || null,
+                city: document.getElementById('city').value || null,
+                state: document.getElementById('state').value || null,
                 active: document.getElementById('active').checked
             };
 
-            const isEditing = supplierId !== '';
+            const isEditing = customerId !== '';
 
-            const url = isEditing ? `${API_URL}/${supplierId}` : API_URL;
+            const url = isEditing ? `${CUSTOMERS_API_URL}/${customerId}` : CUSTOMERS_API_URL;
             const method = isEditing ? 'PUT' : 'POST';
 
             try {
@@ -230,7 +250,7 @@
                         'Accept': 'application/json',
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(supplier)
+                    body: JSON.stringify(customer)
                 });
 
                 const data = await response.json();
@@ -241,21 +261,21 @@
                 }
 
                 showMessage(
-                    isEditing ? 'Fornecedor atualizado com sucesso.' : 'Fornecedor cadastrado com sucesso.',
+                    isEditing ? 'Cliente atualizado com sucesso.' : 'Cliente cadastrado com sucesso.',
                     'success'
                 );
 
-                clearSupplierForm();
-                loadSuppliers();
+                clearCustomerForm();
+                loadCustomers();
 
             } catch (error) {
-                showMessage('Erro ao salvar fornecedor: ' + error.message, 'danger');
+                showMessage('Erro ao salvar cliente: ' + error.message, 'danger');
             }
         }
 
-        async function editSupplier(id) {
+        async function editCustomer(id) {
             try {
-                const response = await fetch(`${API_URL}/${id}`, {
+                const response = await fetch(`${CUSTOMERS_API_URL}/${id}`, {
                     headers: {
                         'Accept': 'application/json'
                     }
@@ -265,16 +285,19 @@
                     throw new Error(`Erro HTTP: ${response.status}`);
                 }
 
-                const supplier = await response.json();
+                const customer = await response.json();
 
-                document.getElementById('supplier_id').value = supplier.id;
-                document.getElementById('name').value = supplier.name ?? '';
-                document.getElementById('document').value = supplier.document ?? '';
-                document.getElementById('phone').value = supplier.phone ?? '';
-                document.getElementById('email').value = supplier.email ?? '';
-                document.getElementById('active').checked = supplier.active === true || supplier.active === 1;
+                document.getElementById('customer_id').value = customer.id;
+                document.getElementById('name').value = customer.name ?? '';
+                document.getElementById('document').value = customer.document ?? '';
+                document.getElementById('phone').value = customer.phone ?? '';
+                document.getElementById('email').value = customer.email ?? '';
+                document.getElementById('address').value = customer.address ?? '';
+                document.getElementById('city').value = customer.city ?? '';
+                document.getElementById('state').value = customer.state ?? '';
+                document.getElementById('active').checked = isActive(customer.active);
 
-                document.getElementById('saveButton').textContent = 'Atualizar fornecedor';
+                document.getElementById('saveButton').textContent = 'Atualizar cliente';
                 document.getElementById('cancelEditButton').classList.remove('d-none');
 
                 window.scrollTo({
@@ -283,19 +306,19 @@
                 });
 
             } catch (error) {
-                showMessage('Erro ao carregar fornecedor para edição: ' + error.message, 'danger');
+                showMessage('Erro ao carregar cliente para edição: ' + error.message, 'danger');
             }
         }
 
-        async function deleteSupplier(id) {
-            const confirmed = confirm('Deseja realmente excluir este fornecedor?');
+        async function deleteCustomer(id) {
+            const confirmed = confirm('Deseja realmente excluir este cliente?');
 
             if (!confirmed) {
                 return;
             }
 
             try {
-                const response = await fetch(`${API_URL}/${id}`, {
+                const response = await fetch(`${CUSTOMERS_API_URL}/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Accept': 'application/json'
@@ -308,26 +331,26 @@
                     throw new Error(data.message ?? `Erro HTTP: ${response.status}`);
                 }
 
-                showMessage('Fornecedor excluído com sucesso.', 'success');
-                loadSuppliers();
+                showMessage('Cliente excluído com sucesso.', 'success');
+                loadCustomers();
 
             } catch (error) {
-                showMessage('Erro ao excluir fornecedor: ' + error.message, 'danger');
+                showMessage('Erro ao excluir cliente: ' + error.message, 'danger');
             }
         }
 
         function cancelEdit() {
-            clearSupplierForm();
+            clearCustomerForm();
             showMessage('Edição cancelada.', 'warning');
         }
 
-        function clearSupplierForm() {
-            document.getElementById('supplierForm').reset();
+        function clearCustomerForm() {
+            document.getElementById('customerForm').reset();
 
-            document.getElementById('supplier_id').value = '';
+            document.getElementById('customer_id').value = '';
             document.getElementById('active').checked = true;
 
-            document.getElementById('saveButton').textContent = 'Salvar fornecedor';
+            document.getElementById('saveButton').textContent = 'Salvar cliente';
             document.getElementById('cancelEditButton').classList.add('d-none');
         }
 
@@ -359,6 +382,26 @@
             errorList += '</ul>';
 
             showMessage(errorList, 'danger');
+        }
+
+        function formatCityState(city, state) {
+            if (city && state) {
+                return `${city}/${state}`;
+            }
+
+            if (city) {
+                return city;
+            }
+
+            if (state) {
+                return state;
+            }
+
+            return '-';
+        }
+
+        function isActive(value) {
+            return value === true || value === 1 || value === '1';
         }
     </script>
 
