@@ -20,4 +20,9 @@ class Customer extends Model
     protected $casts = [
         'active' => 'boolean',
     ];
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class);
+    }
 }
