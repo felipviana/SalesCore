@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SaleController;
@@ -24,6 +25,6 @@ Route::apiResource('suppliers', SupplierController::class);
 Route::apiResource('customers', CustomerController::class);
 Route::apiResource('payment-methods', PaymentMethodController::class);
 Route::apiResource('sales', SaleController::class);
-
+Route::apiResource('dashboard', DashboardController::class);
 Route::apiResource('stock-movements', StockMovementController::class)
     ->only(['index', 'store', 'show']);
