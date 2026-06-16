@@ -152,7 +152,8 @@
                         </div>
 
                         <div class="col-md-2">
-                            <button type="button" class="btn btn-outline-primary w-100" onclick="fillRemainingPayment()">
+                            <button type="button" class="btn btn-outline-primary w-100"
+                                onclick="fillRemainingPayment()">
                                 Usar restante
                             </button>
                         </div>
@@ -276,7 +277,38 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="saleDetailsModal" tabindex="-1" aria-labelledby="saleDetailsModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
 
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="saleDetailsModalLabel">
+                            Detalhes da venda
+                        </h5>
+
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+
+                    <div class="modal-body" id="saleDetailsContent">
+                        <div class="text-center text-muted">
+                            Carregando detalhes da venda...
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="printSaleReceipt()">
+                            Imprimir recibo
+                        </button>
+
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            Fechar
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </main>
 
     <script src="/js/layout.js"></script>
@@ -292,6 +324,8 @@
 
         let saleItems = [];
         let salePayments = [];
+
+        let currentSaleDetails = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadCustomers();
@@ -455,14 +489,18 @@
                             <td>${formatCurrency(sale.total)}</td>
                             <td>${formatSaleStatus(sale.status)}</td>
                             <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="viewSale(${sale.id})">
+                                    Detalhes
+                                </button>
+
                                 ${sale.status === 'canceled'
-                                    ? '<span class="text-muted">Cancelada</span>'
-                                    : `
+                            ? '<span class="text-muted">Cancelada</span>'
+                            : `
                                         <button class="btn btn-sm btn-outline-danger" onclick="cancelSale(${sale.id})">
                                             Cancelar
                                         </button>
                                     `
-                                }
+                        }
                             </td>
                         </tr>
                     `;
@@ -540,6 +578,191 @@
             updateSummary();
         }
 
+        async function viewSale(id) {
+            currentSaleDetails = null;
+            const modalContent = document.getElementById('saleDetailsContent');
+
+            modalContent.innerHTML = `
+        <div class="text-center text-muted">
+            Carregando detalhes da venda...
+        </div>
+    `;
+
+            const modalElement = document.getElementById('saleDetailsModal');
+            const modal = new bootstrap.Modal(modalElement);
+
+            modal.show();
+
+            try {
+                const response = await fetch(`${SALES_API_URL}/${id}`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+
+                const sale = await response.json();
+
+                renderSaleDetails(sale);
+
+            } catch (error) {
+                modalContent.innerHTML = `
+            <div class="alert alert-danger mb-0">
+                Erro ao carregar detalhes da venda: ${error.message}
+            </div>
+        `;
+            }
+        }
+
+        function renderSaleDetails(sale) {
+            currentSaleDetails = sale;
+            const modalContent = document.getElementById('saleDetailsContent');
+
+            modalContent.innerHTML = `
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-3">
+                <div class="border rounded p-3 bg-light">
+                    <div class="text-muted small">Venda</div>
+                    <div class="fw-bold">#${sale.id}</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="border rounded p-3 bg-light">
+                    <div class="text-muted small">Data</div>
+                    <div class="fw-bold">${formatDateTime(sale.created_at)}</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="border rounded p-3 bg-light">
+                    <div class="text-muted small">Cliente</div>
+                    <div class="fw-bold">${escapeHtml(sale.customer?.name ?? 'Venda sem cliente')}</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="border rounded p-3 bg-light">
+                    <div class="text-muted small">Status</div>
+                    <div>${formatSaleStatus(sale.status)}</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-3">
+                <div class="border rounded p-3 bg-white">
+                    <div class="text-muted small">Subtotal</div>
+                    <div class="h5 mb-0">${formatCurrency(sale.subtotal)}</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="border rounded p-3 bg-white">
+                    <div class="text-muted small">Desconto</div>
+                    <div class="h5 mb-0">${formatCurrency(sale.discount)}</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="border rounded p-3 bg-white">
+                    <div class="text-muted small">Acréscimo</div>
+                    <div class="h5 mb-0">${formatCurrency(sale.addition)}</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="border rounded p-3 bg-white">
+                    <div class="text-muted small">Total</div>
+                    <div class="h5 mb-0">${formatCurrency(sale.total)}</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="mb-4">
+            <h6 class="fw-bold">Produtos da venda</h6>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Unidade</th>
+                            <th>Qtd.</th>
+                            <th>Preço unit.</th>
+                            <th>Desconto</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${renderSaleDetailItems(sale.items ?? [])}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <h6 class="fw-bold">Pagamentos</h6>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Forma de pagamento</th>
+                            <th>Valor</th>
+                            <th>Parcelas</th>
+                            <th>Autorização</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${renderSaleDetailPayments(sale.payments ?? [])}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <h6 class="fw-bold">Observações</h6>
+
+            <div class="border rounded p-3 bg-light">
+                ${escapeHtml(sale.notes ?? 'Nenhuma observação informada.')}
+            </div>
+        </div>
+    `;
+        }
+
+        function renderSaleDetailItems(items) {
+            if (items.length === 0) {
+                return `
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    Nenhum item encontrado.
+                </td>
+            </tr>
+        `;
+            }
+
+            return items.map(item => `
+                <tr>
+                    <td>${escapeHtml(item.product_name ?? '-')}</td>
+                    <td>${escapeHtml(item.unit ?? '-')}</td>
+                    <td>${formatNumber(item.quantity, 3)}</td>
+                    <td>${formatCurrency(item.unit_price)}</td>
+                    <td>${formatCurrency(item.discount)}</td>
+                    <td>${formatCurrency(item.total)}</td>
+                </tr>
+            `).join('');
+        }
+
         function renderSaleItems() {
             const table = document.getElementById('saleItemsTable');
 
@@ -573,6 +796,36 @@
                     </tr>
                 `;
             });
+        }
+
+        function renderSaleDetailPayments(payments) {
+            if (payments.length === 0) {
+                return `
+            <tr>
+                <td colspan="4" class="text-center text-muted">
+                    Nenhum pagamento encontrado.
+                </td>
+            </tr>
+        `;
+            }
+
+            return payments.map(payment => `
+        <tr>
+            <td>${escapeHtml(payment.payment_method_name ?? '-')}</td>
+            <td>${formatCurrency(payment.amount)}</td>
+            <td>${payment.installments ?? '-'}</td>
+            <td>${escapeHtml(payment.authorization_code ?? '-')}</td>
+        </tr>
+    `).join('');
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
         }
 
         function removeSaleItem(lineId) {
@@ -909,6 +1162,276 @@
 
         function roundMoney(value) {
             return Math.round(Number(value ?? 0) * 100) / 100;
+        }
+
+        function printSaleReceipt() {
+            if (!currentSaleDetails) {
+                showMessage('Nenhuma venda carregada para impressão.', 'warning');
+                return;
+            }
+
+            const receiptHtml = buildSaleReceiptHtml(currentSaleDetails);
+
+            const printWindow = window.open('', '_blank', 'width=800,height=900');
+
+            if (!printWindow) {
+                showMessage('Não foi possível abrir a janela de impressão.', 'danger');
+                return;
+            }
+
+            printWindow.document.open();
+            printWindow.document.write(receiptHtml);
+            printWindow.document.close();
+
+            printWindow.onload = function () {
+                printWindow.focus();
+                printWindow.print();
+            };
+        }
+
+        function buildSaleReceiptHtml(sale) {
+            const itemsRows = (sale.items ?? []).map(item => `
+        <tr>
+            <td>${escapeHtml(item.product_name ?? '-')}</td>
+            <td>${escapeHtml(item.unit ?? '-')}</td>
+            <td class="text-right">${formatNumber(item.quantity, 3)}</td>
+            <td class="text-right">${formatCurrency(item.unit_price)}</td>
+            <td class="text-right">${formatCurrency(item.discount)}</td>
+            <td class="text-right">${formatCurrency(item.total)}</td>
+        </tr>
+    `).join('');
+
+            const paymentsRows = (sale.payments ?? []).map(payment => `
+        <tr>
+            <td>${escapeHtml(payment.payment_method_name ?? '-')}</td>
+            <td class="text-right">${formatCurrency(payment.amount)}</td>
+            <td class="text-right">${payment.installments ?? '-'}</td>
+            <td>${escapeHtml(payment.authorization_code ?? '-')}</td>
+        </tr>
+    `).join('');
+
+            return `
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <title>Recibo Venda #${sale.id}</title>
+
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    color: #222;
+                    margin: 24px;
+                    font-size: 14px;
+                }
+
+                .header {
+                    text-align: center;
+                    border-bottom: 2px solid #222;
+                    padding-bottom: 12px;
+                    margin-bottom: 20px;
+                }
+
+                .header h1 {
+                    margin: 0;
+                    font-size: 24px;
+                }
+
+                .header p {
+                    margin: 4px 0 0 0;
+                    color: #555;
+                }
+
+                .section {
+                    margin-bottom: 20px;
+                }
+
+                .section-title {
+                    font-weight: bold;
+                    font-size: 16px;
+                    border-bottom: 1px solid #ccc;
+                    padding-bottom: 6px;
+                    margin-bottom: 10px;
+                }
+
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 8px 20px;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 8px;
+                }
+
+                th, td {
+                    border: 1px solid #ccc;
+                    padding: 8px;
+                }
+
+                th {
+                    background: #f2f2f2;
+                    text-align: left;
+                }
+
+                .text-right {
+                    text-align: right;
+                }
+
+                .totals {
+                    width: 320px;
+                    margin-left: auto;
+                }
+
+                .totals div {
+                    display: flex;
+                    justify-content: space-between;
+                    border-bottom: 1px solid #ddd;
+                    padding: 6px 0;
+                }
+
+                .total-final {
+                    font-size: 18px;
+                    font-weight: bold;
+                }
+
+                .footer {
+                    margin-top: 30px;
+                    text-align: center;
+                    color: #555;
+                    font-size: 12px;
+                    border-top: 1px solid #ccc;
+                    padding-top: 12px;
+                }
+
+                @media print {
+                    body {
+                        margin: 12px;
+                    }
+
+                    button {
+                        display: none;
+                    }
+                }
+            </style>
+        </head>
+
+        <body>
+
+            <div class="header">
+                <h1>SalesCore</h1>
+                <p>Recibo de venda</p>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Dados da venda</div>
+
+                <div class="info-grid">
+                    <div><strong>Venda:</strong> #${sale.id}</div>
+                    <div><strong>Data:</strong> ${formatDateTime(sale.created_at)}</div>
+                    <div><strong>Cliente:</strong> ${escapeHtml(sale.customer?.name ?? 'Venda sem cliente')}</div>
+                    <div><strong>Status:</strong> ${formatSaleStatusText(sale.status)}</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Produtos</div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Unidade</th>
+                            <th class="text-right">Qtd.</th>
+                            <th class="text-right">Preço unit.</th>
+                            <th class="text-right">Desconto</th>
+                            <th class="text-right">Total</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${itemsRows || `
+                            <tr>
+                                <td colspan="6">Nenhum item encontrado.</td>
+                            </tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Pagamentos</div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Forma de pagamento</th>
+                            <th class="text-right">Valor</th>
+                            <th class="text-right">Parcelas</th>
+                            <th>Autorização</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${paymentsRows || `
+                            <tr>
+                                <td colspan="4">Nenhum pagamento encontrado.</td>
+                            </tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Resumo financeiro</div>
+
+                <div class="totals">
+                    <div>
+                        <span>Subtotal:</span>
+                        <strong>${formatCurrency(sale.subtotal)}</strong>
+                    </div>
+
+                    <div>
+                        <span>Desconto:</span>
+                        <strong>${formatCurrency(sale.discount)}</strong>
+                    </div>
+
+                    <div>
+                        <span>Acréscimo:</span>
+                        <strong>${formatCurrency(sale.addition)}</strong>
+                    </div>
+
+                    <div class="total-final">
+                        <span>Total:</span>
+                        <strong>${formatCurrency(sale.total)}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Observações</div>
+                <div>${escapeHtml(sale.notes ?? 'Nenhuma observação informada.')}</div>
+            </div>
+
+            <div class="footer">
+                Recibo gerado pelo SalesCore em ${new Date().toLocaleString('pt-BR')}
+            </div>
+
+        </body>
+        </html>
+    `;
+        }
+
+        function formatSaleStatusText(status) {
+            const statuses = {
+                completed: 'Concluída',
+                canceled: 'Cancelada',
+                pending: 'Pendente'
+            };
+
+            return statuses[status] ?? status;
         }
     </script>
 
