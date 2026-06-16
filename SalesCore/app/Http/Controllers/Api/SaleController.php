@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -15,13 +16,31 @@ class SaleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $sales = Sale::with([
+        $query = Sale::with([
             'customer',
             'items.product',
             'payments.paymentMethod'
-        ])
+        ]);
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', $request->customer_id);
+        }
+
+        $sales = $query
             ->latest()
             ->get();
 
@@ -86,8 +105,12 @@ class SaleController extends Controller
 
                 $subtotal += $itemTotal;
 
+                $newStock = $availableStock - $quantity;
+
                 $itemsToCreate[] = [
                     'product' => $product,
+                    'previous_stock' => $availableStock,
+                    'new_stock' => $newStock,
                     'data' => [
                         'product_id' => $product->id,
                         'product_name' => $product->name,
@@ -118,7 +141,7 @@ class SaleController extends Controller
                 throw ValidationException::withMessages([
                     'payments' => 'O total pago precisa ser igual ao total da venda.'
                 ]);
-            }
+            };
 
             $sale = Sale::create([
                 'customer_id' => $validated['customer_id'] ?? null,
@@ -133,10 +156,23 @@ class SaleController extends Controller
             foreach ($itemsToCreate as $itemToCreate) {
                 $sale->items()->create($itemToCreate['data']);
 
-                $itemToCreate['product']->decrement(
-                    'stock_quantity',
-                    $itemToCreate['data']['quantity']
-                );
+                $product = $itemToCreate['product'];
+
+                $product->update([
+                    'stock_quantity' => $itemToCreate['new_stock']
+                ]);
+
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'type' => 'sale',
+                    'quantity' => abs($itemToCreate['data']['quantity']),
+                    'previous_stock' => $itemToCreate['previous_stock'],
+                    'new_stock' => $itemToCreate['new_stock'],
+                    'source_type' => 'sale',
+                    'source_id' => $sale->id,
+                    'notes' => "Saída de estoque pela venda #{$sale->id}.",
+                ]);
             }
 
             foreach ($validated['payments'] as $paymentData) {
@@ -199,13 +235,39 @@ class SaleController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($sale){
+        DB::transaction(function () use ($sale) {
             $sale->load('items.product');
 
             foreach ($sale->items as $item) {
-                if ($item->product) {
-                    $item->product->increment('stock_quantity', $item->quantity);
+                if (!$item->product_id) {
+                    continue;
                 }
+
+                $product = Product::lockForUpdate()->find($item->product_id);
+
+                if(!$product) {
+                    continue;
+                }
+
+                $previousStock = (float) $product->stock_quantity;
+                $quantity = (float) $item->quantity;
+                $newStock = $previousStock + $quantity;
+
+                $product->update([
+                    'stock_quantity' => $newStock
+                ]);
+
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'type' => 'sale_cancel',
+                    'quantity' => abs($quantity),
+                    'previous_stock' => $previousStock,
+                    'new_stock' => $newStock,
+                    'source_type' => 'sale',
+                    'source_id' => $sale->id,
+                    'notes' => "Entrada de estoque pelo cancelamento da venda #{$sale->id}.",
+                ]);
             }
 
             $sale->update([

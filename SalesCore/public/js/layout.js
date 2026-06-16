@@ -47,6 +47,11 @@ function renderHeader() {
             page: 'sales-report',
             label: 'Relatório de Vendas',
             href: '/sales-report.html'
+        },
+        {
+            page: 'stock-movements',
+            label: 'Estoque',
+            href: '/stock-movements.html'
         }
     ];
 
