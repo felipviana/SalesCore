@@ -174,6 +174,8 @@ class SaleController extends Controller
             'items.product',
             'payments.paymentMethod'
         ]);
+
+        return response()->json($sale);
     }
 
     /**
