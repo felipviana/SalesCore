@@ -42,6 +42,11 @@ function renderHeader() {
             page: 'sales',
             label: 'Vendas',
             href: '/sales.html'
+        },
+        {
+            page: 'sales-report',
+            label: 'Relatório de Vendas',
+            href: '/sales-report.html'
         }
     ];
 
