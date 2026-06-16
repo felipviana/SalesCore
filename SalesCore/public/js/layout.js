@@ -37,6 +37,11 @@ function renderHeader() {
             page: 'payment-methods',
             label: 'Formas de Pagamento',
             href: '/payment-methods.html'
+        },
+        {
+            page: 'sales',
+            label: 'Vendas',
+            href: '/sales.html'
         }
     ];
 
