@@ -11,7 +11,10 @@
 </head>
 
 <body class="bg-light" data-page="home">
-
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth();
+    </script>
     <div id="appHeader"></div>
 
     <main class="container py-4">
@@ -224,9 +227,7 @@
         async function loadDashboard() {
             try {
                 const response = await fetch(DASHBOARD_API_URL, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 const responseText = await response.text();

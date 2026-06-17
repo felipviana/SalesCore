@@ -11,7 +11,10 @@
 </head>
 
 <body class="bg-light" data-page="sales-report">
-
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth();
+    </script>
     <div id="appHeader"></div>
 
     <main class="container py-4">
@@ -191,9 +194,7 @@
 
             try {
                 const response = await fetch(CUSTOMERS_API_URL, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -247,9 +248,7 @@
 
             try {
                 const response = await fetch(url, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {

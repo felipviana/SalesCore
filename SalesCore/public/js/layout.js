@@ -52,6 +52,11 @@ function renderHeader() {
             page: 'stock-movements',
             label: 'Estoque',
             href: '/stock-movements.html'
+        },
+        {
+            page: 'users',
+            label: 'Usuários',
+            href: '/users.html'
         }
     ];
 
@@ -87,9 +92,13 @@ function renderHeader() {
                 </button>
 
                 <div class="collapse navbar-collapse" id="mainNavbar">
-                    <ul class="navbar-nav ms-auto">
+                    <ul class="navbar-nav ms-auto me-3">
                         ${menuLinks}
                     </ul>
+
+                    <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                        Sair
+                    </button>
                 </div>
             </div>
         </nav>

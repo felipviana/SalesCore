@@ -11,7 +11,10 @@
 </head>
 
 <body class="bg-light" data-page="payment-methods">
-
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth();
+    </script>
     <div id="appHeader"></div>
 
     <main class="container py-4">
@@ -72,7 +75,8 @@
                                 Salvar forma de pagamento
                             </button>
 
-                            <button type="button" id="cancelEditButton" class="btn btn-outline-warning d-none" onclick="cancelEdit()">
+                            <button type="button" id="cancelEditButton" class="btn btn-outline-warning d-none"
+                                onclick="cancelEdit()">
                                 Cancelar edição
                             </button>
 
@@ -147,9 +151,7 @@
 
             try {
                 const response = await fetch(PAYMENT_METHODS_API_URL, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -180,9 +182,9 @@
                             <td>${paymentMethod.description ?? '-'}</td>
                             <td>
                                 ${isActive(paymentMethod.active)
-                                    ? '<span class="badge bg-success">Ativa</span>'
-                                    : '<span class="badge bg-secondary">Inativa</span>'
-                                }
+                            ? '<span class="badge bg-success">Ativa</span>'
+                            : '<span class="badge bg-secondary">Inativa</span>'
+                        }
                             </td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-primary me-1" onclick="editPaymentMethod(${paymentMethod.id})">
@@ -231,10 +233,7 @@
             try {
                 const response = await fetch(url, {
                     method: method,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
+                    headers: getAuthJsonHeaders(),
                     body: JSON.stringify(paymentMethod)
                 });
 
@@ -263,9 +262,7 @@
         async function editPaymentMethod(id) {
             try {
                 const response = await fetch(`${PAYMENT_METHODS_API_URL}/${id}`, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -303,9 +300,7 @@
             try {
                 const response = await fetch(`${PAYMENT_METHODS_API_URL}/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 const data = await response.json();

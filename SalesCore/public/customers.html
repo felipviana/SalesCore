@@ -11,7 +11,10 @@
 </head>
 
 <body class="bg-light" data-page="customers">
-
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth();
+    </script>
     <div id="appHeader"></div>
 
     <main class="container py-4">
@@ -159,9 +162,7 @@
 
             try {
                 const response = await fetch(CUSTOMERS_API_URL, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -246,10 +247,7 @@
             try {
                 const response = await fetch(url, {
                     method: method,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
+                    headers: getAuthJsonHeaders(),
                     body: JSON.stringify(customer)
                 });
 
@@ -276,9 +274,7 @@
         async function editCustomer(id) {
             try {
                 const response = await fetch(`${CUSTOMERS_API_URL}/${id}`, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -320,9 +316,7 @@
             try {
                 const response = await fetch(`${CUSTOMERS_API_URL}/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 const data = await response.json();

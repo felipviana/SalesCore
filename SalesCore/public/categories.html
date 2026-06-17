@@ -11,7 +11,10 @@
 </head>
 
 <body class="bg-light" data-page="categories">
-
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth();
+    </script>
     <div id="appHeader"></div>
 
     <main class="container py-4">
@@ -132,9 +135,7 @@
 
             try {
                 const resposta = await fetch(API_URL, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!resposta.ok) {
@@ -211,10 +212,7 @@
             try {
                 const resposta = await fetch(url, {
                     method: metodo,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
+                    headers: getAuthJsonHeaders(),
                     body: JSON.stringify(categoria)
                 });
 
@@ -241,9 +239,7 @@
         async function editarCategoria(id) {
             try {
                 const resposta = await fetch(`${API_URL}/${id}`, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!resposta.ok) {
@@ -280,9 +276,7 @@
             try {
                 const resposta = await fetch(`${API_URL}/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 const dados = await resposta.json();

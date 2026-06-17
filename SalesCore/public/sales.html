@@ -11,7 +11,10 @@
 </head>
 
 <body class="bg-light" data-page="sales">
-
+    <script src="/js/auth.js"></script>
+    <script>
+        requireAuth();
+    </script>
     <div id="appHeader"></div>
 
     <main class="container py-4">
@@ -347,9 +350,7 @@
 
             try {
                 const response = await fetch(CUSTOMERS_API_URL, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -382,9 +383,7 @@
 
             try {
                 const response = await fetch(PRODUCTS_API_URL, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -417,9 +416,7 @@
 
             try {
                 const response = await fetch(PAYMENT_METHODS_API_URL, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -456,9 +453,7 @@
 
             try {
                 const response = await fetch(SALES_API_URL, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -595,9 +590,7 @@
 
             try {
                 const response = await fetch(`${SALES_API_URL}/${id}`, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 if (!response.ok) {
@@ -966,10 +959,7 @@
             try {
                 const response = await fetch(SALES_API_URL, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
+                    headers: getAuthJsonHeaders(),
                     body: JSON.stringify(sale)
                 });
 
@@ -1001,9 +991,7 @@
             try {
                 const response = await fetch(`${SALES_API_URL}/${id}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                    headers: getAuthHeaders()
                 });
 
                 const data = await response.json();
