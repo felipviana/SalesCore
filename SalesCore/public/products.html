@@ -122,9 +122,15 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Produtos cadastrados</span>
 
-                <button class="btn btn-sm btn-outline-primary" onclick="loadProducts()">
-                    Atualizar
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-warning" onclick="toggleLowStockFilter()">
+                        Estoque baixo
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadProducts()">
+                        Atualizar
+                    </button>
+                </div>
             </div>
 
             <div class="card-body">
@@ -139,7 +145,9 @@
                                 <th>Fornecedor</th>
                                 <th>Unidade</th>
                                 <th>Preço venda</th>
-                                <th>Estoque</th>
+                                <th>Estoque atual</th>
+                                <th>Estoque mínimo</th>
+                                <th>Situação</th>
                                 <th>Status</th>
                                 <th class="text-end">Ações</th>
                             </tr>
@@ -147,7 +155,7 @@
 
                         <tbody id="productsTable">
                             <tr>
-                                <td colspan="10" class="text-center text-muted">
+                                <td colspan="12" class="text-center text-muted">
                                     Carregando produtos...
                                 </td>
                             </tr>
@@ -164,6 +172,9 @@
         const CATEGORIES_API_URL = '/api/categories';
         const SUPPLIERS_API_URL = '/api/suppliers';
 
+        let productsCache = [];
+        let showingOnlyLowStock = false;
+
         document.addEventListener('DOMContentLoaded', () => {
             loadCategories();
             loadSuppliers();
@@ -177,7 +188,7 @@
 
             table.innerHTML = `
                 <tr>
-                    <td colspan="10" class="text-center text-muted">
+                    <td colspan="12" class="text-center text-muted">
                         Carregando produtos...
                     </td>
                 </tr>
@@ -194,60 +205,124 @@
                     throw new Error(`Erro HTTP: ${response.status}`);
                 }
 
-                const products = await response.json();
+                productsCache = await response.json();
 
-                if (products.length === 0) {
-                    table.innerHTML = `
-                        <tr>
-                            <td colspan="10" class="text-center text-muted">
-                                Nenhum produto cadastrado.
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-
-                table.innerHTML = '';
-
-                products.forEach(product => {
-                    table.innerHTML += `
-                        <tr>
-                            <td>${product.id}</td>
-                            <td>${product.name}</td>
-                            <td>${product.sku ?? '-'}</td>
-                            <td>${product.category?.name ?? '-'}</td>
-                            <td>${product.supplier?.name ?? '-'}</td>
-                            <td>${product.unit}</td>
-                            <td>R$ ${formatNumber(product.sale_price)}</td>
-                            <td>${formatNumber(product.stock_quantity)}</td>
-                            <td>
-                                ${isActive(product.active)
-                            ? '<span class="badge bg-success">Ativo</span>'
-                            : '<span class="badge bg-secondary">Inativo</span>'
-                        }
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editProduct(${product.id})">
-                                    Editar
-                                </button>
-
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${product.id})">
-                                    Excluir
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
+                renderProductsTable();
 
             } catch (error) {
                 table.innerHTML = `
-                    <tr>
-                        <td colspan="10" class="text-center text-danger">
-                            Erro ao carregar produtos: ${error.message}
-                        </td>
-                    </tr>
-                `;
+            <tr>
+                <td colspan="12" class="text-center text-danger">
+                    Erro ao carregar produtos: ${error.message}
+                </td>
+            </tr>
+        `;
             }
+        }
+
+        function formatCurrency(value) {
+            const number = Number(value ?? 0);
+
+            return number.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            });
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function renderProductsTable() {
+            const table = document.getElementById('productsTable');
+
+            let productsToShow = productsCache;
+
+            if (showingOnlyLowStock) {
+                productsToShow = productsCache.filter(product => isLowStock(product));
+            }
+
+            if (productsToShow.length === 0) {
+                table.innerHTML = `
+            <tr>
+                <td colspan="12" class="text-center text-muted">
+                    Nenhum produto encontrado.
+                </td>
+            </tr>
+        `;
+                return;
+            }
+
+            table.innerHTML = '';
+
+            productsToShow.forEach(product => {
+                table.innerHTML += `
+                <tr class="${isLowStock(product) ? 'table-warning' : ''}">
+                    <td>${product.id}</td>
+                    <td>${escapeHtml(product.name)}</td>
+                    <td>${escapeHtml(product.sku ?? '-')}</td>
+                    <td>${escapeHtml(product.category?.name ?? '-')}</td>
+                    <td>${escapeHtml(product.supplier?.name ?? '-')}</td>
+                    <td>${escapeHtml(product.unit ?? '-')}</td>
+                    <td>${formatCurrency(product.sale_price)}</td>
+                    <td>${formatNumber(product.stock_quantity, 3)}</td>
+                    <td>${formatNumber(product.minimum_stock, 3)}</td>
+                    <td>${formatStockStatus(product)}</td>
+                    <td>
+                        ${isActive(product.active)
+                        ? '<span class="badge bg-success">Ativo</span>'
+                        : '<span class="badge bg-secondary">Inativo</span>'
+                    }
+                    </td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editProduct(${product.id})">
+                            Editar
+                        </button>
+
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${product.id})">
+                            Excluir
+                        </button>
+                    </td>
+                </tr>
+            `;
+            });
+        }
+
+        function toggleLowStockFilter() {
+            showingOnlyLowStock = !showingOnlyLowStock;
+
+            renderProductsTable();
+
+            showMessage(
+                showingOnlyLowStock
+                    ? 'Exibindo apenas produtos com estoque baixo.'
+                    : 'Exibindo todos os produtos.',
+                'info'
+            );
+        }
+
+        function isLowStock(product) {
+            const stockQuantity = Number(product.stock_quantity ?? 0);
+            const minimumStock = Number(product.minimum_stock ?? 0);
+
+            return minimumStock > 0 && stockQuantity <= minimumStock;
+        }
+
+        function formatStockStatus(product) {
+            if (!isActive(product.active)) {
+                return '<span class="badge bg-secondary">Produto inativo</span>';
+            }
+
+            if (isLowStock(product)) {
+                return '<span class="badge bg-warning text-dark">Estoque baixo</span>';
+            }
+
+            return '<span class="badge bg-success">Estoque ok</span>';
         }
 
         async function loadCategories() {
